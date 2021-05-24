@@ -24,11 +24,13 @@ set_seed(42)
 PRETRAINED_MODEL_NAME = "sonoisa/t5-base-japanese"
 
 # 転移学習済みモデルのディレクトリ
-MODEL_DIR = "/workspace/model"
+MODEL_DIR = "/app/workspace/model"
 # データセットのディレクトリ
-DATA_DIR = "/workspace/data"
-assert os.path.exists("/workspace/data")
-assert os.path.exists("/workspace/model")
+DATA_DIR = "/app/workspace/data"
+assert os.path.exists(DATA_DIR)
+assert os.path.exists(MODEL_DIR)
+
+TSV_DATA = Path(DATA_DIR) / "blank_dataset.tsv"
 
 
 class TitleGenerator:
@@ -45,15 +47,14 @@ class TitleGenerator:
 
         self.trained_model = trained_model
 
-        # 各種ハイパーパラメータ
         args_dict = dict(
-            data_dir="/content/data",  # データセットのディレクトリ
+            data_dir=DATA_DIR,
             model_name_or_path=PRETRAINED_MODEL_NAME,
             tokenizer_name_or_path=PRETRAINED_MODEL_NAME,
             n_gpu=1 if self.USE_GPU else 0,
             seed=42,
         )
-        # 学習に用いるハイパーパラメータを設定する
+        # 予測に用いるハイパーパラメータ
         args_dict.update(
             {
                 # 'learning_rate':3e-4,
@@ -120,9 +121,8 @@ class TitleGenerator:
 
 
 if __name__ == "__main__":
-
     # titleを持たない条項本文情報
-    with open("/content/data/blank_dataset.tsv") as fp:
+    with open(TSV_DATA) as fp:
         lines = [
             l.strip().split("\t")
             for l in fp.read().split("\n")

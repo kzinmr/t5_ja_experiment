@@ -38,8 +38,6 @@ RUN pip3 install -U pip
 COPY requirements.txt .
 RUN pip install -r requirements.txt
 
-COPY run.sh /app/run.sh
-
 COPY train.py /app/train.py
 COPY predict.py /app/predict.py
 

@@ -31,13 +31,13 @@ set_seed(42)
 PRETRAINED_MODEL_NAME = "sonoisa/t5-base-japanese"
 
 # 転移学習済みモデルのディレクトリ
-MODEL_DIR = "/workspace/model"
+MODEL_DIR = "/app/workspace/model"
 # データセットのディレクトリ
-DATA_DIR = "/workspace/data"
-assert os.path.exists("/workspace/data")
-assert os.path.exists("/workspace/model")
+DATA_DIR = "/app/workspace/data"
+assert os.path.exists(DATA_DIR)
+assert os.path.exists(MODEL_DIR)
 
-TSV_DATA = "/workspace/data/dataset.tsv"
+TSV_DATA = Path(DATA_DIR) / "dataset.tsv"
 
 # GPU利用有無
 USE_GPU = torch.cuda.is_available()
@@ -134,27 +134,7 @@ class T5FineTuner(pl.LightningModule):
 
         self.all_data = self._read_tsv(TSV_DATA)
 
-        self.train_dataset = self.get_dataset(
-            tokenizer=self.tokenizer, type_path="train.tsv", args=self.hparams
-        )
-
-        self.val_dataset = self.get_dataset(
-            tokenizer=self.tokenizer, type_path="dev.tsv", args=self.hparams
-        )
-
-        self.test_dataset = self.get_dataset(
-            tokenizer=self.tokenizer, type_path="test.tsv", args=self.hparams
-        )
-
-        self.t_total = (
-            (
-                len(self.train_dataset)
-                // (self.hparams.train_batch_size * max(1, self.hparams.n_gpu))
-            )
-            // self.hparams.gradient_accumulation_steps
-            * float(self.hparams.num_train_epochs)
-        )
-
+    @staticmethod
     def _read_tsv(tsv_path):
         with open(tsv_path) as fp:
             lines = [
@@ -171,6 +151,7 @@ class T5FineTuner(pl.LightningModule):
                         seen.add(body)
         return all_data
 
+    @staticmethod
     def _to_line(data):
         title = data["title"]
         body = data["body"]
@@ -200,6 +181,27 @@ class T5FineTuner(pl.LightningModule):
                         f_dev.write(line)
                     else:
                         f_test.write(line)
+
+            self.train_dataset = self.get_dataset(
+                tokenizer=self.tokenizer, type_path="train.tsv", args=self.hparams
+            )
+
+            self.val_dataset = self.get_dataset(
+                tokenizer=self.tokenizer, type_path="dev.tsv", args=self.hparams
+            )
+
+            self.test_dataset = self.get_dataset(
+                tokenizer=self.tokenizer, type_path="test.tsv", args=self.hparams
+            )
+
+            self.t_total = (
+                (
+                    len(self.train_dataset)
+                    // (self.hparams.train_batch_size * max(1, self.hparams.n_gpu))
+                )
+                // self.hparams.gradient_accumulation_steps
+                * float(self.hparams.num_train_epochs)
+            )
 
     def forward(
         self,
@@ -372,7 +374,6 @@ def export_test_prediction(test_loader):
 
 
 if __name__ == "__main__":
-    # 各種ハイパーパラメータ
     args_dict = dict(
         data_dir=DATA_DIR,
         model_name_or_path=PRETRAINED_MODEL_NAME,
@@ -383,15 +384,15 @@ if __name__ == "__main__":
     # 学習に用いるハイパーパラメータ
     args_dict.update(
         {
-            'learning_rate':3e-4,
-            'weight_decay':0.0,
-            'adam_epsilon':1e-8,
-            'warmup_steps':0,
-            'gradient_accumulation_steps':1,
-            'early_stop_callback':False,
-            'fp_16':False,
-            'opt_level':"O1",
-            'max_grad_norm':1.0,
+            "learning_rate": 3e-4,
+            "weight_decay": 0.0,
+            "adam_epsilon": 1e-8,
+            "warmup_steps": 0,
+            "gradient_accumulation_steps": 1,
+            "early_stop_callback": False,
+            "fp_16": False,
+            "opt_level": "O1",
+            "max_grad_norm": 1.0,
             "max_input_length": 512,  # 入力文の最大トークン数
             "max_target_length": 64,  # 出力文の最大トークン数
             "train_batch_size": 8,
