@@ -421,7 +421,7 @@ if __name__ == "__main__":
     module.model.save_pretrained(MODEL_DIR)
 
     # predict on test
-    export_test_prediction(module.test_loader)
+    export_test_prediction(module.test_dataloader())
 
     # eval on test
     trainer.test()
